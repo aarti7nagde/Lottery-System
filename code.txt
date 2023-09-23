@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: MIT
+// compiler version must be greater than or equal to 0.8.17 and less than 0.9.0
+pragma solidity ^0.8.17;
+
+contract Lottery{
+    address public manager;
+    address payable[] public participants;
+
+    constructor()
+    {
+        manager = msg.sender;
+    }
+
+    receive() external payable 
+    {
+        require(msg.value==1 ether); //if this statement is true then only next line will be executed.
+        participants.push(payable(msg.sender));
+    }
+
+    function getBalance() public view returns(uint)
+    {
+        require(msg.sender==manager);
+        return address(this).balance;
+    }
+
+    function random() public view returns(uint){
+       return uint(keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, participants.length)));
+    }
+
+    //index is used to select participants from array
+    //% returns reminder
+    function selectWinner() public 
+    {
+        require(msg.sender==manager);
+        require(participants.length>=3);
+        uint r = random();
+        address payable winner;
+        uint index = r % participants.length;
+        winner = participants[index];
+        winner.transfer(getBalance()); //tranfering value to the winner's account
+        participants = new address payable[](0);
+
+    }
+}
+
